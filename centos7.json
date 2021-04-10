@@ -1,0 +1,85 @@
+{
+  "variables": {
+      "boot_wait": "5s",
+      "disk_size": "8000",
+      "iso_checksum": "07b94e6b1a0b0260b94c83d6bb76b26bf7a310dc78d7a9c7432809fb9bc6194a",
+      "iso_url": "http://miroir.univ-paris13.fr/centos/7.9.2009/isos/x86_64/CentOS-7-x86_64-Minimal-2009.iso",
+      "memsize": "1024",
+      "numvcpus": "1",
+      "ssh_password" : "nicolas",
+      "ssh_username" : "nicolas",
+      "vm_name": "CentOS-7-x86_64-minimal-2009"
+    },
+    "builders": [
+      {
+        "type": "vmware-iso",
+        "boot_command": [
+          "<tab><bs><bs><bs><bs><bs>text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg<enter><wait>"
+        ],
+        "boot_wait": "{{ user `boot_wait` }}",
+        "disk_size": "{{ user `disk_size` }}",
+        "disk_type_id": "0",
+        "guest_os_type": "centos-64",
+        "headless": false,
+        "http_directory": "http",
+        "iso_checksum": "{{ user `iso_checksum` }}",
+        "iso_url": "{{ user `iso_url` }}",
+        "shutdown_command": "echo 'packer'|sudo -S /sbin/halt -h -p",
+        "ssh_password": "{{ user `ssh_password` }}",
+        "ssh_port": 22,
+        "ssh_username": "{{ user `ssh_username` }}",
+        "ssh_timeout": "30m",
+        "vm_name": "{{ user `vm_name` }}",
+        "vmx_data": {
+          "memsize": "{{ user `memsize` }}",
+          "numvcpus": "{{ user `numvcpus` }}",
+          "virtualHW.version": "14"
+        }
+      },
+      {
+        "type": "virtualbox-iso",
+        "boot_command": [
+          "<tab><bs><bs><bs><bs><bs>text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg<enter><wait>"
+        ],
+        "boot_wait": "{{ user `boot_wait` }}",
+        "disk_size": "{{ user `disk_size` }}",
+        "guest_os_type": "RedHat_64",
+        "headless": false,
+        "http_directory": "http",
+        "iso_checksum": "{{ user `iso_checksum` }}",
+        "iso_url": "{{ user `iso_url` }}",
+        "shutdown_command": "echo 'packer'|sudo -S /sbin/halt -h -p",
+        "ssh_password": "{{ user `ssh_password` }}",
+        "ssh_port": 22,
+        "ssh_username": "{{ user `ssh_username` }}",
+        "ssh_timeout": "30m",
+        "vm_name": "{{ user `vm_name` }}",
+        "vboxmanage": [
+          ["modifyvm", "{{.Name}}", "--memory", "{{ user `memsize` }}"],
+          ["modifyvm", "{{.Name}}", "--cpus", "{{ user `numvcpus` }}"]
+        ]
+      }
+    ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "execute_command": "echo 'packer'|{{.Vars}} sudo -S -E bash '{{.Path}}'",
+      "inline": [
+        "yum -y install epel-release",
+        "yum -y update",
+        "yum -y install ansible"
+      ]
+    },
+    {
+      "type": "ansible-local",
+      "playbook_file": "scripts/setup.yml"
+    },
+    {
+      "type": "shell",
+      "execute_command": "echo 'packer'|{{.Vars}} sudo -S -E bash '{{.Path}}'",
+      "scripts": [
+        "scripts/cleanup.sh"
+      ]
+    }
+  ]
+}
